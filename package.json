@@ -1,6 +1,6 @@
 {
-  "name": "janus_http_videoroom",
-  "version": "1.0.1",
+  "name": "janus_http_streaming",
+  "version": "1.0.2",
   "description": "",
   "main": "index.js",
   "dependencies": {
@@ -14,12 +14,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oviser/janus_http_videoroom.git"
+    "url": "git+https://github.com/oviser/janus_http_streaming.git"
   },
   "author": "Anthony Maurin",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/oviser/janus_http_videoroom/issues"
+    "url": "https://github.com/oviser/janus_http_streaming/issues"
   },
-  "homepage": "https://github.com/oviser/janus_http_videoroom#readme"
+  "homepage": "https://github.com/oviser/janus_http_streaming#readme"
 }
