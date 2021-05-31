@@ -1,0 +1,25 @@
+{
+  "name": "janus_http_videoroom",
+  "version": "1.0.1",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "got": "^11.8.2",
+    "uuid": "^8.3.2",
+    "ws": "^7.4.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oviser/janus_http_videoroom.git"
+  },
+  "author": "Anthony Maurin",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/oviser/janus_http_videoroom/issues"
+  },
+  "homepage": "https://github.com/oviser/janus_http_videoroom#readme"
+}
