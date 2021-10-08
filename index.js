@@ -174,6 +174,33 @@ module.exports = class {
         return result.plugindata.data.list
     }
 
+    async create(payload) {
+        console.log(this.session+"/"+this.handler)
+        const path = this.session+"/"+this.handler
+        const result = await janusHttpTransportApi.post(this.host, path, {
+            "janus" : "message",
+            "body" : {
+                "request": "create",
+                "type": "rtp",
+                "metadata": payload.metadata,
+                "audio": payload.audio,
+                "audiopt": payload.audiopt,
+                "audiortpmap": payload.audiortpmap,
+                "audioport": payload.audioport,
+                "video": payload.video,
+                "videopt": payload.videopt,
+                "videortpmap": payload.videortpmap,
+                "videoport": payload.videoport
+            }
+        }, this.secret)
+        if(!result.janus === "success") {
+            console.log('Err listing janus streaming')
+            return false
+        }
+        console.log(result)
+        return result.plugindata.data
+    }
+
     async delete() {
         if(!this.session) {
             console.log('Janus is not initiated')
