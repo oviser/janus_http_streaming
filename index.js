@@ -46,6 +46,21 @@ const Handler = class {
         this.room = null
         this.id = null
     }
+
+    async trickle(payload) {
+        payload = payload || {}
+        const path = this.janus.session + "/" + this.handler
+        const result = await janusHttpTransportApi.post(this.janus.host, path, {
+            "janus" : "trickle",
+            "candidate" : payload.ice
+        }, this.janus.secret)
+        if(!result.janus === "success") {
+            console.log('Err trickle on janus videoRoom')
+            return false
+        }
+        console.log(result)
+        return true
+    }
 }
 
 module.exports = class {
@@ -252,7 +267,12 @@ module.exports = class {
             return false
         }
         const data = await promise
-        return data
+        if(data.jsep && data.jsep.sdp) {
+            return data.jsep.sdp
+        }else{
+            console.log('Err watching mountpoint on janus streaming')
+            return false
+        }
     }
 
     async start(payload) {
