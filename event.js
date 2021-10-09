@@ -9,7 +9,7 @@ module.exports = {
     },
 
     call(txId, d) {
-        console.log(d)
+        //console.log(d)
         const listener = this.listeners.find(x => x.txId === txId)
         if(listener) {
             listener.resolve(d)

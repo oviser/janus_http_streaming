@@ -12,11 +12,15 @@ const Instance = require("..")
         audio: true,
         audiopt: 111,
         audiortpmap: "opus/48000/2",
-        audioport: 9854,
+        audioport: 9856,
         video: true,
         videopt: 100,
         videortpmap: "VP8/90000",
-        videoport: 9954
+        videoport: 9956
     })
     console.log(result)
+
+    if (result.stream) {
+        await janus.destroy(result.stream.id)
+    }
 })()
