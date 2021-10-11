@@ -58,7 +58,6 @@ const Handler = class {
             console.log('Err trickle on janus videoRoom')
             return false
         }
-        console.log(result)
         return true
     }
 }
@@ -103,6 +102,14 @@ module.exports = class {
         const handler = new Handler(this, result.data.id)
         this.handlers.push(handler)
         return handler
+    }
+
+    async deleteHandler(handler) {
+        const index = this.handlers.indexOf(handler)
+        if (index > -1) {
+            this.handlers.splice(index, 1)
+        }
+        // todo: terminate session in janus
     }
 
     async destroySession() {
