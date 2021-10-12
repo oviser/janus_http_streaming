@@ -231,7 +231,9 @@ module.exports = class {
                 "video": payload.video,
                 "videopt": payload.videopt,
                 "videortpmap": payload.videortpmap,
-                "videoport": payload.videoport
+                "videoport": payload.videoport,
+                "videortcpport": payload.videortcpport,
+                "audiortcpport": payload.audiortcpport
             }
         }, this.secret)
         if(!result.janus === "success") {
