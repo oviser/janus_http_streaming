@@ -130,6 +130,18 @@ const Handler = class {
         }
         return result
     }
+
+    async hangup(payload) {
+        payload = payload || {}
+        const path = this.janus.session+"/"+this.handler
+        await janusHttpTransportApi.post(this.janus.host, path, {
+            "janus" : "message",
+            "body" : {
+                "request" : "stop"
+            }
+        }, this.janus.secret)
+        return true
+    }
 }
 
 module.exports = class {
