@@ -60,6 +60,60 @@ const Handler = class {
         }
         return true
     }
+
+    async create(payload) {
+        const path = this.janus.session+"/"+this.handler
+        const result = await janusHttpTransportApi.post(this.janus.host, path, {
+            "janus" : "message",
+            "body" : {
+                "request": "create",
+                "type": "rtp",
+                "metadata": payload.metadata,
+                "audio": payload.audio,
+                "audiopt": payload.audiopt,
+                "audiortpmap": payload.audiortpmap,
+                "audioport": payload.audioport,
+                "video": payload.video,
+                "videopt": payload.videopt,
+                "videortpmap": payload.videortpmap,
+                "videoport": payload.videoport,
+                "videortcpport": payload.videortcpport,
+                "audiortcpport": payload.audiortcpport
+            }
+        }, this.janus.secret)
+        if(!result.janus === "success") {
+            console.log('Err creating janus streaming mountpoint')
+            return false
+        }
+        return result.plugindata.data
+    }
+
+    async watch(id) {
+        const path = this.janus.session + "/" + this.handler
+        const transaction = janusHttpTransportApi.getTransaction()        
+        const promise = new Promise((resolve, reject) => {
+            event.add(transaction, resolve)
+        }, this.janus.secret)
+        const result = await janusHttpTransportApi.post(this.janus.host, path, {
+            "transaction": transaction,
+            "janus" : "message",
+            "body" : {
+                "request": "watch",
+                "id": id
+            }
+        }, this.janus.secret)
+        if(!result.janus === "success") {
+            console.log('Err watching janus streaming mountpoint')
+            return false
+        }
+        const data = await promise
+        if(data.jsep && data.jsep.sdp) {
+            return data.jsep.sdp
+        }else{
+            console.log('Err watching mountpoint on janus streaming')
+            return false
+        }
+    }
 }
 
 module.exports = class {
@@ -216,31 +270,12 @@ module.exports = class {
         return result.plugindata.data.list
     }
 
-    async create(payload) {
-        const path = this.session+"/"+this.handler
-        const result = await janusHttpTransportApi.post(this.host, path, {
-            "janus" : "message",
-            "body" : {
-                "request": "create",
-                "type": "rtp",
-                "metadata": payload.metadata,
-                "audio": payload.audio,
-                "audiopt": payload.audiopt,
-                "audiortpmap": payload.audiortpmap,
-                "audioport": payload.audioport,
-                "video": payload.video,
-                "videopt": payload.videopt,
-                "videortpmap": payload.videortpmap,
-                "videoport": payload.videoport,
-                "videortcpport": payload.videortcpport,
-                "audiortcpport": payload.audiortcpport
-            }
-        }, this.secret)
-        if(!result.janus === "success") {
-            console.log('Err creating janus streaming mountpoint')
-            return false
-        }
-        return result.plugindata.data
+    async mount(payload) {
+        const handler = this.handlers.find(x => {
+            return x.handler === this.handler
+        })
+        const data = await handler.create(payload)
+        return data
     }
 
     async delete() {
@@ -258,29 +293,11 @@ module.exports = class {
      */
 
     async watch(id) {
-        const path = this.session + "/" + this.handler
-        const transaction = janusHttpTransportApi.getTransaction()        
-        const promise = new Promise((resolve, reject) => {
-            event.add(transaction, resolve)
-        }, this.secret)
-        const result = await janusHttpTransportApi.post(this.host, path, {
-            "transaction": transaction,
-            "janus" : "message",
-            "body" : {
-                "request": "watch",
-                "id": id
-            }
-        }, this.secret)
-        if(!result.janus === "success") {
-            console.log('Err watching janus streaming mountpoint')
-            return false
-        }
-        const data = await promise
-        if(data.jsep && data.jsep.sdp) {
-            return data.jsep.sdp
-        }else{
-            console.log('Err watching mountpoint on janus streaming')
-            return false
+        const mountHandler = await this.createHandler()
+        const data = await mountHandler.watch(id)
+        return {
+            handler: mountHandler,
+            data: data
         }
     }
 
