@@ -114,6 +114,22 @@ const Handler = class {
             return false
         }
     }
+
+    async start(payload) {
+        const path = this.janus.session + "/" + this.handler
+        const result = await janusHttpTransportApi.post(this.janus.host, path, {
+            "janus" : "message",
+            "body" : {
+                "request": "start"
+            },
+            "jsep": payload.jsep
+        }, this.janus.secret)
+        if(!result.janus === "success") {
+            console.log('Err watching janus streaming mountpoint')
+            return false
+        }
+        return result
+    }
 }
 
 module.exports = class {
@@ -299,21 +315,5 @@ module.exports = class {
             handler: mountHandler,
             data: data
         }
-    }
-
-    async start(payload) {
-        const path = this.session+"/"+this.handler
-        const result = await janusHttpTransportApi.post(this.host, path, {
-            "janus" : "message",
-            "body" : {
-                "request": "start"
-            },
-            "jsep": payload.jsep
-        }, this.secret)
-        if(!result.janus === "success") {
-            console.log('Err watching janus streaming mountpoint')
-            return false
-        }
-        return result
     }
 }
