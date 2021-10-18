@@ -149,8 +149,7 @@ module.exports = class {
         this.host = payload.host
         this.secret = payload.secret
         this.session = null                     // Janus Session id
-        this.handlers = []                      // Janus plugin handler's id (streaming)
-        this.handler = null
+        this.handlerInstance = null             // Janus plugin handler's id (streaming)
         this.killed = false
         this.crashed = 0
     }
@@ -182,15 +181,10 @@ module.exports = class {
             return false
         }
         const handler = new Handler(this, result.data.id)
-        this.handlers.push(handler)
         return handler
     }
 
     async deleteHandler(handler) {
-        const index = this.handlers.indexOf(handler)
-        if (index > -1) {
-            this.handlers.splice(index, 1)
-        }
         // todo: terminate session in janus
     }
 
@@ -253,8 +247,9 @@ module.exports = class {
         let result = null
         try{
             result = await this.createSession()
-            if(result) {
-                this.handler = (await this.createHandler()).handler
+            if (result) {
+                const handlerInstance = await this.createHandler()
+                this.handlerInstance = handlerInstance
             }
         }catch(_){
             console.log('Janus off #9')
@@ -268,7 +263,7 @@ module.exports = class {
     }
 
     async destroy(id) {
-        const path = this.session+"/"+this.handler
+        const path = this.session+"/"+this.handlerInstance.handler
         const result = await janusHttpTransportApi.post(this.host, path, {
             "janus" : "message",
             "body" : {
@@ -284,7 +279,7 @@ module.exports = class {
     }
 
     async list() {
-        const path = this.session+"/"+this.handler
+        const path = this.session+"/"+this.handlerInstance.handler
         const result = await janusHttpTransportApi.post(this.host, path, {
             "janus" : "message",
             "body" : {
@@ -299,10 +294,7 @@ module.exports = class {
     }
 
     async mount(payload) {
-        const handler = this.handlers.find(x => {
-            return x.handler === this.handler
-        })
-        const data = await handler.create(payload)
+        const data = await this.handlerInstance.handler.create(payload)
         return data
     }
 
