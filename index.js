@@ -257,9 +257,10 @@ module.exports = class {
         this.runner()                               /* Consume events */
     }
 
-    kill() {
+    async kill() {
         console.log('killed '+this.host)
         this.killed = true
+        await this.delete()
     }
 
     async destroy(id) {
