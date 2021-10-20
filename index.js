@@ -276,7 +276,7 @@ module.exports = class {
         await this.delete()
     }
 
-    async destroy(id) {
+    async unMount(id) {
         const path = this.session+"/"+this.handlerInstance.handler
         const result = await janusHttpTransportApi.post(this.host, path, {
             "janus" : "message",
@@ -289,6 +289,7 @@ module.exports = class {
             console.log('Err destroying janus streaming mountpoint')
             return false
         }
+        console.log(result)
         return result.plugindata.data
     }
 
