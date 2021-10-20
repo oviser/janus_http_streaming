@@ -131,7 +131,7 @@ const Handler = class {
         return result
     }
 
-    async hangup(payload) {
+    async stop(payload) {
         payload = payload || {}
         const path = this.janus.session+"/"+this.handler
         await janusHttpTransportApi.post(this.janus.host, path, {
@@ -141,6 +141,19 @@ const Handler = class {
             }
         }, this.janus.secret)
         return true
+    }
+
+    async detach() {
+        const path = this.janus.session+"/"+this.handler
+        await janusHttpTransportApi.post(this.janus.host, path, {
+            "janus" : "detach",
+        }, this.janus.secret)
+        return true
+    }
+
+    async hangup() {
+        await this.stop()
+        await this.detach()
     }
 }
 
