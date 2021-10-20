@@ -308,8 +308,12 @@ module.exports = class {
     }
 
     async mount(payload) {
+        const mountHandler = this.handlerInstance
         const data = await this.handlerInstance.handler.create(payload)
-        return data
+        return {
+            handler: mountHandler,
+            data: data
+        }
     }
 
     async delete() {
