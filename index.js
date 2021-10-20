@@ -309,7 +309,7 @@ module.exports = class {
 
     async mount(payload) {
         const mountHandler = this.handlerInstance
-        const data = await this.handlerInstance.handler.create(payload)
+        const data = await this.handlerInstance.create(payload)
         return {
             handler: mountHandler,
             data: data
