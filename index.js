@@ -1,3 +1,9 @@
+/*
+ *  NodeJs lib that implements Janus streaming module
+ *  using the http transport plugin.
+ *    See https://janus.conf.meetecho.com/docs/streaming.html
+ */
+
 const got = require('got')
 const { v4: uuidv4 } = require('uuid')
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -40,6 +46,115 @@ const Handler = class {
         this.room = null
         this.id = null
     }
+
+    async trickle(payload) {
+        payload = payload || {}
+        const path = this.janus.session + "/" + this.handler
+        const result = await janusHttpTransportApi.post(this.janus.host, path, {
+            "janus" : "trickle",
+            "candidate" : payload.ice
+        }, this.janus.secret)
+        if(!result.janus === "success") {
+            console.log('Err trickle on janus videoRoom')
+            return false
+        }
+        return true
+    }
+
+    async create(payload) {
+        const path = this.janus.session+"/"+this.handler
+        const result = await janusHttpTransportApi.post(this.janus.host, path, {
+            "janus" : "message",
+            "body" : {
+                "request": "create",
+                "type": "rtp",
+                "metadata": payload.metadata,
+                "audio": payload.audio,
+                "audiopt": payload.audiopt,
+                "audiortpmap": payload.audiortpmap,
+                "audioport": payload.audioport,
+                "video": payload.video,
+                "videopt": payload.videopt,
+                "videortpmap": payload.videortpmap,
+                "videoport": payload.videoport,
+                "videortcpport": payload.videortcpport,
+                "audiortcpport": payload.audiortcpport
+            }
+        }, this.janus.secret)
+        if(!result.janus === "success") {
+            console.log('Err creating janus streaming mountpoint')
+            return false
+        }
+        return result.plugindata.data
+    }
+
+    async watch(id) {
+        const path = this.janus.session + "/" + this.handler
+        const transaction = janusHttpTransportApi.getTransaction()        
+        const promise = new Promise((resolve, reject) => {
+            event.add(transaction, resolve)
+        }, this.janus.secret)
+        const result = await janusHttpTransportApi.post(this.janus.host, path, {
+            "transaction": transaction,
+            "janus" : "message",
+            "body" : {
+                "request": "watch",
+                "id": id
+            }
+        }, this.janus.secret)
+        if(!result.janus === "success") {
+            console.log('Err watching janus streaming mountpoint')
+            return false
+        }
+        const data = await promise
+        if(data.jsep && data.jsep.sdp) {
+            return data.jsep.sdp
+        }else{
+            console.log('Err watching mountpoint on janus streaming')
+            return false
+        }
+    }
+
+    async start(payload) {
+        const path = this.janus.session + "/" + this.handler
+        const result = await janusHttpTransportApi.post(this.janus.host, path, {
+            "janus" : "message",
+            "body" : {
+                "request": "start"
+            },
+            "jsep": payload.jsep
+        }, this.janus.secret)
+        if(!result.janus === "success") {
+            console.log('Err watching janus streaming mountpoint')
+            return false
+        }
+        return result
+    }
+
+    async stop(payload) {
+        payload = payload || {}
+        const path = this.janus.session+"/"+this.handler
+        await janusHttpTransportApi.post(this.janus.host, path, {
+            "janus" : "message",
+            "body" : {
+                "request" : "stop"
+            }
+        }, this.janus.secret)
+        return true
+    }
+
+    async detach() {
+        const path = this.janus.session+"/"+this.handler
+        await janusHttpTransportApi.post(this.janus.host, path, {
+            "janus" : "detach",
+        }, this.janus.secret)
+        return true
+    }
+
+    async hangup() {
+        await this.stop()
+        await this.detach()
+    }
 }
 
 module.exports = class {
@@ -47,8 +162,7 @@ module.exports = class {
         this.host = payload.host
         this.secret = payload.secret
         this.session = null                     // Janus Session id
-        this.handlers = []                      // Janus plugin handler's id (streaming)
-        this.handler = null
+        this.handlerInstance = null             // Janus plugin handler's id (streaming)
         this.killed = false
         this.crashed = 0
     }
@@ -80,8 +194,11 @@ module.exports = class {
             return false
         }
         const handler = new Handler(this, result.data.id)
-        this.handlers.push(handler)
         return handler
+    }
+
+    async deleteHandler(handler) {
+        // todo: terminate session in janus
     }
 
     async destroySession() {
@@ -143,8 +260,9 @@ module.exports = class {
         let result = null
         try{
             result = await this.createSession()
-            if(result) {
-                this.handler = (await this.createHandler()).handler
+            if (result) {
+                const handlerInstance = await this.createHandler()
+                this.handlerInstance = handlerInstance
             }
         }catch(_){
             console.log('Janus off #9')
@@ -152,15 +270,31 @@ module.exports = class {
         this.runner()                               /* Consume events */
     }
 
-    kill() {
+    async kill() {
         console.log('killed '+this.host)
         this.killed = true
+        await this.delete()
     }
 
-    destroy() {}
+    async unMount(id) {
+        const path = this.session+"/"+this.handlerInstance.handler
+        const result = await janusHttpTransportApi.post(this.host, path, {
+            "janus" : "message",
+            "body" : {
+                "request": "destroy",
+                "id": id
+            }
+        }, this.secret)
+        if(!result.janus === "success") {
+            console.log('Err destroying janus streaming mountpoint')
+            return false
+        }
+        console.log(result)
+        return result.plugindata.data
+    }
 
     async list() {
-        const path = this.session+"/"+this.handler
+        const path = this.session+"/"+this.handlerInstance.handler
         const result = await janusHttpTransportApi.post(this.host, path, {
             "janus" : "message",
             "body" : {
@@ -174,6 +308,15 @@ module.exports = class {
         return result.plugindata.data.list
     }
 
+    async mount(payload) {
+        const mountHandler = this.handlerInstance
+        const data = await this.handlerInstance.create(payload)
+        return {
+            handler: mountHandler,
+            data: data
+        }
+    }
+
     async delete() {
         if(!this.session) {
             console.log('Janus is not initiated')
@@ -182,5 +325,18 @@ module.exports = class {
             if(!await this.destroySession()) return
         }
         return true
+    }
+
+    /*
+     *  Async Requests
+     */
+
+    async watch(id) {
+        const mountHandler = await this.createHandler()
+        const data = await mountHandler.watch(id)
+        return {
+            handler: mountHandler,
+            data: data
+        }
     }
 }
